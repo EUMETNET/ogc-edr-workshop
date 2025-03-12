@@ -16,16 +16,7 @@ from data.data import Variable
 
 
 def create_url_from_request(request):
-    # root_path should contain the base path used by a reverse proxy to serve the API. The value of root_path
-    # can be added as parameter to FastAPI() in main.py. By default it is empty.
-    base_path = request.scope.get("root_path")
-
-    # The hostname and scheme (http or https) will (should) be correctly set
-    # from the X-Forwarded-Host and X-Forwarded-Scheme headers by a reverse proxy in front of the API
-    host = request.headers["host"]
-    scheme = request.url.scheme
-
-    return f"{scheme}://{host}{base_path}/collections"
+    return f"{request.base_url}collections"
 
 
 def split_string_parameters_to_list(value: str) -> list[str]:
@@ -80,8 +71,7 @@ def datetime_to_iso_string(value: datetime) -> str:
 def get_covjson_parameter_from_variable(var: Variable) -> CovJson_Parameter:
     parameter = CovJson_Parameter(
         id=var.id,
-        label={"en": var.id},
-        description={"en": var.long_name},
+        label={"en": var.long_name},
         observedProperty=CovJson_ObservedProperty(
             id=f"https://vocab.nerc.ac.uk/standard_name/{var.standard_name}",
             label={"en": var.standard_name},
@@ -94,8 +84,7 @@ def get_covjson_parameter_from_variable(var: Variable) -> CovJson_Parameter:
 def get_edr_parameter_from_variable(var: Variable) -> Edr_Parameter:
     parameter = Edr_Parameter(
         id=var.id,
-        label=var.id,
-        description=var.long_name,
+        label=var.long_name,
         observedProperty=Edr_ObservedProperty(
             id=f"https://vocab.nerc.ac.uk/standard_name/{var.standard_name}",
             label=var.standard_name,

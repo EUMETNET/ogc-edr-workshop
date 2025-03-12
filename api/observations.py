@@ -7,7 +7,7 @@ from covjson_pydantic.domain import Axes
 from covjson_pydantic.domain import Domain
 from covjson_pydantic.domain import DomainType
 from covjson_pydantic.domain import ValuesAxis
-from covjson_pydantic.ndarray import NdArray
+from covjson_pydantic.ndarray import NdArrayFloat
 from covjson_pydantic.parameter import Parameter
 from edr_pydantic.parameter import EdrBaseModel
 from fastapi import APIRouter
@@ -144,14 +144,14 @@ def get_coverage_for_station(station, parameters, start_datetime, end_datetime) 
             if start_datetime <= time <= end_datetime:
                 values.append(value)
 
-        ranges[p] = NdArray(
+        ranges[p] = NdArrayFloat(
             axisNames=["t", "y", "x"],
             shape=[len(values), 1, 1],
             values=values,
         )
 
     # Add station code
-    station_code = {"inspiregloss:Identifier": station.wsi}
+    station_code = {"eumetnet:locationId": station.wsi}
 
     domain = Domain(
         domainType=DomainType.point_series,
@@ -160,10 +160,9 @@ def get_coverage_for_station(station, parameters, start_datetime, end_datetime) 
             y=ValuesAxis[float](values=[station.latitude]),
             t=ValuesAxis[AwareDatetime](values=t_axis_values),
         ),
-        referencing=get_reference_system(),
     )
 
-    return Coverage(domain=domain, parameters=parameters, ranges=ranges, **station_code)
+    return Coverage(domain=domain, ranges=ranges, **station_code)
 
 
 def handle_datetime(datetime):
@@ -176,7 +175,7 @@ def handle_datetime(datetime):
 @router.get(
     "/locations/{location_id}",
     tags=["Collection data queries"],
-    response_model=Coverage,
+    response_model=CoverageCollection,
     response_model_exclude_none=True,
     response_class=CoverageJsonResponse,
 )
@@ -187,7 +186,7 @@ async def get_data_location_id(
         Query(alias="parameter-name", description="Comma seperated list of parameter names.", example="ff, dd"),
     ] = None,
     datetime: Annotated[str | None, Query(example="2024-02-22T01:00:00Z/2024-02-22T02:00:00Z")] = None,
-) -> Coverage:
+) -> CoverageCollection:
     # Location query parameter
     station = get_station(location_id)
     if not station:
@@ -204,9 +203,10 @@ async def get_data_location_id(
         requested_parameters = split_string_parameters_to_list(parameter_name)
         check_requested_parameters_exist(requested_parameters, parameters.keys())
 
-        parameters = {p: parameters[p] for p in requested_parameters}
+        parameters = {p: parameters[p] for p in sorted(requested_parameters, key=str.casefold)}
 
-    return get_coverage_for_station(station, parameters, start_datetime, end_datetime)
+    coverage = get_coverage_for_station(station, parameters, start_datetime, end_datetime)
+    return CoverageCollection(coverages=[coverage], parameters=parameters, referencing=get_reference_system())
 
 
 @router.get(
@@ -223,7 +223,7 @@ async def get_data_area(
         Query(alias="parameter-name", description="Comma seperated list of parameter names.", example="ff, dd"),
     ] = None,
     datetime: Annotated[str | None, Query(example="2024-02-22T01:00:00Z/2024-02-22T02:00:00Z")] = None,
-):
+) -> CoverageCollection:
     # No error handling!
     poly = wkt.loads(coords)
     stations_in_polygon = [s for s in get_stations() if geometry.Point(s.longitude, s.latitude).within(poly)]
@@ -241,7 +241,7 @@ async def get_data_area(
         check_requested_parameters_exist(requested_parameters, all_parameter_ids)
 
     coverages = []
-    coverage_parameters: dict[str, Parameter] = {}
+    collection_parameters: dict[str, Parameter] = {}
     for station in stations_in_polygon:
         # Make sure we only return data for parameters that exist for each station
         parameters: dict[str, Parameter] = {
@@ -251,10 +251,14 @@ async def get_data_area(
             parameters = {p: parameters[p] for p in set(requested_parameters).intersection(set(parameters.keys()))}
 
         if parameters:  # Anything left?
-            coverages.append(get_coverage_for_station(station, parameters, start_datetime, end_datetime))
-            coverage_parameters.update(parameters)
+            coverages.append(get_coverage_for_station(station,
+                                                      dict(sorted(parameters.items(), key=lambda i: i[0].casefold())),
+                                                      start_datetime, end_datetime))
+            collection_parameters.update(parameters)
 
     if len(coverages) == 0:
         raise HTTPException(status_code=400, detail="No data available for this query")
     else:
-        return CoverageCollection(coverages=coverages, parameters=coverage_parameters)
+        return CoverageCollection(coverages=coverages,
+                                  parameters=dict(sorted(collection_parameters.items(), key=lambda i: i[0].casefold())),
+                                  referencing=get_reference_system())
