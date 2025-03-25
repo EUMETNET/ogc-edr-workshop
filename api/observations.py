@@ -100,7 +100,7 @@ async def get_locations(
     features = []
     parameter_ids_returned_stations = set()
     for station in stations:
-        variables_for_station = get_variables_for_station(station.id)
+        variables_for_station = get_variables_for_station(station.wsi)
         parameter_names_for_station = list(map(lambda x: x.id, variables_for_station))
 
         # Filter out stations that have none of the requested parameters
@@ -110,7 +110,7 @@ async def get_locations(
         features.append(
             Feature(
                 type="Feature",
-                id=station.id,
+                id=station.wsi,
                 properties={
                     "name": station.name,
                     "detail": f"https://oscar.wmo.int/surface/rest/api/search/station?wigosId={station.wsi}",
@@ -180,7 +180,7 @@ def handle_datetime(datetime):
     response_class=CoverageJsonResponse,
 )
 async def get_data_location_id(
-    location_id: Annotated[str, Path(example="06260")],
+    location_id: Annotated[str, Path(example="0-20000-0-06260")],
     parameter_name: Annotated[
         str | None,
         Query(alias="parameter-name", description="Comma seperated list of parameter names.", example="ff, dd"),
@@ -245,20 +245,27 @@ async def get_data_area(
     for station in stations_in_polygon:
         # Make sure we only return data for parameters that exist for each station
         parameters: dict[str, Parameter] = {
-            var.id: get_covjson_parameter_from_variable(var) for var in get_variables_for_station(station.id)
+            var.id: get_covjson_parameter_from_variable(var) for var in get_variables_for_station(station.wsi)
         }
         if parameter_name:
             parameters = {p: parameters[p] for p in set(requested_parameters).intersection(set(parameters.keys()))}
 
         if parameters:  # Anything left?
-            coverages.append(get_coverage_for_station(station,
-                                                      dict(sorted(parameters.items(), key=lambda i: i[0].casefold())),
-                                                      start_datetime, end_datetime))
+            coverages.append(
+                get_coverage_for_station(
+                    station,
+                    dict(sorted(parameters.items(), key=lambda i: i[0].casefold())),
+                    start_datetime,
+                    end_datetime,
+                )
+            )
             collection_parameters.update(parameters)
 
     if len(coverages) == 0:
         raise HTTPException(status_code=400, detail="No data available for this query")
     else:
-        return CoverageCollection(coverages=coverages,
-                                  parameters=dict(sorted(collection_parameters.items(), key=lambda i: i[0].casefold())),
-                                  referencing=get_reference_system())
+        return CoverageCollection(
+            coverages=coverages,
+            parameters=dict(sorted(collection_parameters.items(), key=lambda i: i[0].casefold())),
+            referencing=get_reference_system(),
+        )

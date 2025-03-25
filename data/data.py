@@ -49,8 +49,8 @@ def get_stations():
     return stations
 
 
-def get_station(station_id: str) -> Station | None:
-    stations = list(filter(lambda x: x.id == station_id, get_stations()))
+def get_station(wsi_id: str) -> Station | None:
+    stations = list(filter(lambda x: x.wsi == wsi_id, get_stations()))
     return stations[0] if len(stations) == 1 else None
 
 
@@ -107,7 +107,7 @@ def get_variables_for_station(station_id: str):
     vars = get_variables()
     vars_with_data = []
     for var in vars:
-        var_data = ds.sel(station=station_id)[var.id]
+        var_data = ds.where(ds["wsi"] == station_id)[var.id]
         if not np.isnan(var_data.values).all():
             vars_with_data.append(var)
     return vars_with_data
@@ -123,13 +123,13 @@ if __name__ == "__main__":
     print(get_stations())
     print(get_variables())
 
-    print(get_station("06260"))
-    print(get_station("06209"))
+    print(get_station("0-20000-0-06260"))
+    print(get_station("0-20000-0-06209"))
     print(get_variable("ff"))
-    print(get_data("06260", "ff"))
+    print(get_data("0-20000-0-06260", "ff"))
 
     print(get_temporal_extent())
 
-    print(len(get_variables_for_station("06260")))
-    print(len(get_variables_for_station("06209")))
-    print(list(map(lambda x: x.id, get_variables_for_station("06209"))))
+    print(len(get_variables_for_station("0-20000-0-06260")))
+    print(len(get_variables_for_station("0-20000-0-06209")))
+    print(list(map(lambda x: x.wsi, get_variables_for_station("0-20000-0-06209"))))
