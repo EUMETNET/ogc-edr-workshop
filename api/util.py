@@ -15,8 +15,8 @@ from pydantic import TypeAdapter
 from data.data import Variable
 
 
-def create_url_from_request(request):
-    return f"{request.base_url}collections"
+def create_url_from_request(request) -> str:
+    return str(request.base_url) + "collections"
 
 
 def split_string_parameters_to_list(value: str) -> list[str]:
