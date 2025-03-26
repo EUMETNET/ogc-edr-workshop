@@ -13,6 +13,7 @@ from covjson_pydantic.ndarray import NdArrayFloat
 from covjson_pydantic.parameter import Parameter
 from edr_pydantic.parameter import EdrBaseModel
 from fastapi import APIRouter
+from fastapi import HTTPException
 from fastapi import Path
 from fastapi import Query
 from geojson_pydantic import FeatureCollection
@@ -21,6 +22,8 @@ from starlette.responses import JSONResponse
 
 from api.util import get_covjson_parameter_from_variable
 from api.util import get_reference_system
+from api.util import split_raw_interval_into_start_end_datetime
+from api.util import split_string_parameters_to_list
 from data.data import get_data
 from data.data import get_station
 from data.data import get_variables_for_station
@@ -44,17 +47,29 @@ class EDRFeatureCollection(EdrBaseModel, FeatureCollection):
     parameters: dict[str, Parameter]
 
 
-def get_coverage_for_station(station, parameters) -> Coverage:
+def check_requested_parameters_exist(requested_parameters, all_parameters):
+    if not set(requested_parameters).issubset(set(all_parameters)):
+        unavailable_parameters = set(requested_parameters) - set(all_parameters)
+        raise HTTPException(
+            status_code=400, detail=f"The following parameters are not available: {unavailable_parameters}"
+        )
+
+
+def get_coverage_for_station(station, parameters, start_datetime, end_datetime) -> Coverage:
     # See if we have any data in this time interval by testing the first parameter
     # TODO: Making assumption here the time interval is the same for all parameters
     data = get_data(station.id, list(parameters)[0])
-    t_axis_values = [t for t, v in data]
+    t_axis_values = [t for t, v in data if (start_datetime <= t <= end_datetime)]
+    if len(t_axis_values) == 0:
+        raise HTTPException(status_code=400, detail="No data available")
+
     # Get parameter data
     ranges = {}
     for p in parameters:
         values = []
         for time, value in get_data(station.id, p):
-            values.append(value)
+            if start_datetime <= time <= end_datetime:
+                values.append(value)
 
         ranges[p] = NdArrayFloat(
             axisNames=["t", "y", "x"],
@@ -100,6 +115,13 @@ async def get_locations(
     pass
 
 
+def handle_datetime(datetime):
+    start_datetime, end_datetime = split_raw_interval_into_start_end_datetime(datetime)
+    if end_datetime < start_datetime:
+        raise HTTPException(status_code=400, detail="The start datetime must be before end datetime")
+    return start_datetime, end_datetime
+
+
 @router.get(
     "/locations/{location_id}",
     tags=["Collection data queries"],
@@ -117,13 +139,23 @@ async def get_data_location_id(
 ) -> CoverageCollection:
     # Location query parameter
     station = get_station(location_id)
+    if not station:
+        raise HTTPException(status_code=404, detail="Location not found")
+
+    start_datetime, end_datetime = handle_datetime(datetime)
 
     # Parameter_name query parameter
     parameters: dict[str, Parameter] = {
         var.id: get_covjson_parameter_from_variable(var) for var in get_variables_for_station(location_id)
     }
 
-    coverage = get_coverage_for_station(station, parameters)
+    if parameter_name:
+        requested_parameters = split_string_parameters_to_list(parameter_name)
+        check_requested_parameters_exist(requested_parameters, parameters.keys())
+
+        parameters = {p: parameters[p] for p in sorted(requested_parameters, key=str.casefold)}
+
+    coverage = get_coverage_for_station(station, parameters, start_datetime, end_datetime)
     return CoverageCollection(coverages=[coverage], parameters=parameters, referencing=get_reference_system())
 
 
