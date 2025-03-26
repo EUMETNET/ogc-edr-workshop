@@ -14,6 +14,7 @@ import xarray as xr
 dirname = os.path.dirname(__file__)
 filename = os.path.join(dirname, "20240222.nc")
 ds = xr.open_dataset(filename, engine="netcdf4", chunks=None)
+wsi_station_id_mapping = dict(zip(ds["wsi"].values[0].tolist(), ds["station"].values.tolist()))
 
 
 @dataclass
@@ -109,7 +110,7 @@ def get_variables_for_station(station_id: str):
     vars = get_variables()
     vars_with_data = []
     for var in vars:
-        var_data = ds.where(ds["wsi"] == station_id)[var.id]
+        var_data = ds.sel(station=wsi_station_id_mapping[station_id])[var.id]
         if not np.isnan(var_data.values).all():
             vars_with_data.append(var)
     return vars_with_data
