@@ -8,6 +8,9 @@ from covjson_pydantic.parameter import Parameter as CovJson_Parameter
 from covjson_pydantic.reference_system import ReferenceSystem
 from covjson_pydantic.reference_system import ReferenceSystemConnectionObject
 from covjson_pydantic.unit import Unit as CovJson_Unit
+from edr_pydantic.observed_property import ObservedProperty as Edr_ObservedProperty
+from edr_pydantic.parameter import Parameter as Edr_Parameter
+from edr_pydantic.unit import Unit as Edr_Unit
 from pydantic import AwareDatetime
 from pydantic import TypeAdapter
 
@@ -76,6 +79,19 @@ def get_covjson_parameter_from_variable(var: Variable) -> CovJson_Parameter:
             label={"en": var.standard_name},
         ),
         unit=CovJson_Unit(label={"en": var.units}),
+    )
+    return parameter
+
+
+def get_edr_parameter_from_variable(var: Variable) -> Edr_Parameter:
+    parameter = Edr_Parameter(
+        id=var.id,
+        label=var.long_name,
+        observedProperty=Edr_ObservedProperty(
+            id=f"https://vocab.nerc.ac.uk/standard_name/{var.standard_name}",
+            label=var.standard_name,
+        ),
+        unit=Edr_Unit(label=var.units),
     )
     return parameter
 

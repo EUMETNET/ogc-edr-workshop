@@ -95,7 +95,7 @@ async def get_collections(request: Request) -> Collections:
     base_url = create_url_from_request(request)
     return Collections(
         links=[
-            Link(href=f"{base_url}", rel="self"),
+            Link(href=base_url, rel="self"),
         ],
         collections=[collection.get_collection_metadata(base_url, is_self=False)],
     )
