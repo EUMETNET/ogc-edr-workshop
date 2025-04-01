@@ -133,7 +133,7 @@ async def get_locations(
 def get_coverage_for_station(station, parameters, start_datetime, end_datetime) -> Coverage:
     # See if we have any data in this time interval by testing the first parameter
     # TODO: Making assumption here the time interval is the same for all parameters
-    data = get_data(station.id, list(parameters)[0])
+    data = get_data(station.wsi, list(parameters)[0])
     t_axis_values = [t for t, v in data if (start_datetime <= t <= end_datetime)]
     if len(t_axis_values) == 0:
         raise HTTPException(status_code=400, detail="No data available")
@@ -142,7 +142,7 @@ def get_coverage_for_station(station, parameters, start_datetime, end_datetime) 
     ranges = {}
     for p in parameters:
         values = []
-        for time, value in get_data(station.id, p):
+        for time, value in get_data(station.wsi, p):
             if start_datetime <= time <= end_datetime:
                 values.append(value)
 
