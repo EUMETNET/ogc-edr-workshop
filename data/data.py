@@ -126,13 +126,14 @@ if __name__ == "__main__":
     print(get_stations())
     print(get_variables())
 
-    print(get_station("0-20000-0-06260"))
+    station = get_station("0-20000-0-06260")
+    print(station)
     print(get_station("0-20000-0-06209"))
     print(get_variable("ff"))
-    print(get_data("0-20000-0-06260", "ff"))
+    print(get_data(station.id, "ff"))
 
     print(get_temporal_extent())
 
     print(len(get_variables_for_station("0-20000-0-06260")))
     print(len(get_variables_for_station("0-20000-0-06209")))
-    print(list(map(lambda x: x.wsi, get_variables_for_station("0-20000-0-06209"))))
+    print(list(map(lambda x: x.id, get_variables_for_station("0-20000-0-06209"))))
