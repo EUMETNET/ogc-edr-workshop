@@ -19,7 +19,6 @@ wsi_station_id_mapping = dict(zip(ds["wsi"].values[0].tolist(), ds["station"].va
 
 @dataclass
 class Station:
-    id: str
     name: str
     wsi: str
     latitude: float
@@ -39,21 +38,20 @@ class Variable:
 @cache
 def get_stations():
     stations = []
-    for station_id, station_name, wsi, latitude, longitude, height in zip(
-        ds["station"].values,
+    for station_name, wsi, latitude, longitude, height in zip(
         ds["stationname"].values[0],
         ds["wsi"].values[0],
         ds["lat"].values[0],
         ds["lon"].values[0],
         ds["height"].values[0],
     ):
-        station = Station(station_id, station_name, wsi, latitude, longitude, height)
+        station = Station(station_name, wsi, latitude, longitude, height)
         stations.append(station)
     return stations
 
 
-def get_station(wsi_id: str) -> Station | None:
-    stations = list(filter(lambda x: x.wsi == wsi_id, get_stations()))
+def get_station(station_wsi: str) -> Station | None:
+    stations = list(filter(lambda x: x.wsi == station_wsi, get_stations()))
     return stations[0] if len(stations) == 1 else None
 
 
@@ -94,8 +92,8 @@ def get_variable(var_id: str) -> Variable | None:
     return vars[0] if len(vars) == 1 else None
 
 
-def get_data(station: str, variable: str) -> list[tuple[datetime, float | None]]:
-    var = ds.sel(station=station)[variable].fillna(None)
+def get_data(station_wsi: str, variable: str) -> list[tuple[datetime, float | None]]:
+    var = ds.sel(station=wsi_station_id_mapping[station_wsi])[variable].fillna(None)
     data = []
     for time, obs_value in zip(
         pd.to_datetime(var["time"].data).to_pydatetime(),
@@ -126,11 +124,10 @@ if __name__ == "__main__":
     print(get_stations())
     print(get_variables())
 
-    station = get_station("0-20000-0-06260")
-    print(station)
+    print(get_station("0-20000-0-06260"))
     print(get_station("0-20000-0-06209"))
     print(get_variable("ff"))
-    print(get_data(station.id, "ff"))
+    print(get_data("0-20000-0-06260", "ff"))
 
     print(get_temporal_extent())
 
