@@ -50,8 +50,8 @@ def get_stations():
     return stations
 
 
-def get_station(wsi_id: str) -> Station | None:
-    stations = list(filter(lambda x: x.wsi == wsi_id, get_stations()))
+def get_station(station_wsi: str) -> Station | None:
+    stations = list(filter(lambda x: x.wsi == station_wsi, get_stations()))
     return stations[0] if len(stations) == 1 else None
 
 
@@ -92,8 +92,8 @@ def get_variable(var_id: str) -> Variable | None:
     return vars[0] if len(vars) == 1 else None
 
 
-def get_data(wsi_id: str, variable: str) -> list[tuple[datetime, float | None]]:
-    var = ds.sel(station=wsi_station_id_mapping[wsi_id])[variable].fillna(None)
+def get_data(station_wsi: str, variable: str) -> list[tuple[datetime, float | None]]:
+    var = ds.sel(station=wsi_station_id_mapping[station_wsi])[variable].fillna(None)
     data = []
     for time, obs_value in zip(
         pd.to_datetime(var["time"].data).to_pydatetime(),
