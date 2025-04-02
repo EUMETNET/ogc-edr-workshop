@@ -44,6 +44,29 @@ class EDRFeatureCollection(EdrBaseModel, FeatureCollection):
     parameters: dict[str, Parameter]
 
 
+@router.get(
+    "/locations",
+    tags=["Collection data queries"],
+    response_model=EDRFeatureCollection,
+    response_model_exclude_none=True,
+    response_class=GeoJsonResponse,
+)
+async def get_locations(
+    bbox: Annotated[str | None, Query(example="5.0,52.0,6.0,52.1")] = None,
+    # datetime: Annotated[str | None, Query(example="2024-02-22T01:00:00Z/2024-02-22T02:00:00Z")] = None,
+    parameter_name: Annotated[
+        str | None,
+        Query(
+            alias="parameter-name",
+            description="Comma seperated list of parameter names. "
+            "Return only locations that have one of these parameter.",
+            example="ff, dd",
+        ),
+    ] = None,
+) -> EDRFeatureCollection:
+    pass
+
+
 def get_coverage_for_station(station, parameters) -> Coverage:
     # See if we have any data in this time interval by testing the first parameter
     # TODO: Making assumption here the time interval is the same for all parameters
@@ -75,29 +98,6 @@ def get_coverage_for_station(station, parameters) -> Coverage:
     )
 
     return Coverage(domain=domain, ranges=ranges, **station_code)
-
-
-@router.get(
-    "/locations",
-    tags=["Collection data queries"],
-    response_model=EDRFeatureCollection,
-    response_model_exclude_none=True,
-    response_class=GeoJsonResponse,
-)
-async def get_locations(
-    bbox: Annotated[str | None, Query(example="5.0,52.0,6.0,52.1")] = None,
-    # datetime: Annotated[str | None, Query(example="2024-02-22T01:00:00Z/2024-02-22T02:00:00Z")] = None,
-    parameter_name: Annotated[
-        str | None,
-        Query(
-            alias="parameter-name",
-            description="Comma seperated list of parameter names. "
-            "Return only locations that have one of these parameter.",
-            example="ff, dd",
-        ),
-    ] = None,
-) -> EDRFeatureCollection:
-    pass
 
 
 @router.get(
