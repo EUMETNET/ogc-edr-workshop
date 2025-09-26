@@ -13,11 +13,14 @@ from edr_pydantic.collections import Collection
 from edr_pydantic.collections import Collections
 from edr_pydantic.link import Link
 from fastapi import FastAPI
-from fastapi import Request
+from fastapi import status
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from api import collection
 from api import observations
-from api.util import create_url_from_request
 
 
 def setup_logging():
@@ -33,14 +36,40 @@ setup_logging()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-
-app = FastAPI(title="EDR workshop", swagger_ui_parameters={"defaultModelsExpandDepth": -1, "tryItOutEnabled": True})
+app = FastAPI(
+    title="EDR workshop",
+    contact={
+        "email": "rodeoproject@fmi.fi",
+        "name": "RODEO",
+    },
+    description="Climate EDR API",
+    swagger_ui_parameters={"defaultModelsExpandDepth": -1, "tryItOutEnabled": True},
+    version="v1",
+)
 app.add_middleware(BrotliMiddleware)
+
+
+# According to OGC EDR spec, we can not return 422 (Fast API default for request validation errors),
+# so we return these as 400, making sure we keep the standard FastAPI format.
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(_: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content=jsonable_encoder({"detail": exc.errors()}),
+    )
+
+
+@app.get("/health", include_in_schema=False)
+async def health_endpoint():
+    return "ok"
 
 
 @app.get(
     "/",
     tags=["Capabilities"],
+    name="landing page of this API",
+    description="The landing page provides links to the API definition,"
+    + " the Conformance statements and the metadata about the feature data in this dataset.",
     response_model=LandingPageModel,
     response_model_exclude_none=True,
 )
@@ -50,7 +79,7 @@ async def landing_page(request: Request) -> LandingPageModel:
     return LandingPageModel(
         title="EDR tutorial",
         description="A simple example EDR implementation",
-        keywords=["weather", "temperature", "wind", "humidity", "pressure", "clouds", "radiation"],
+        keywords=["Weather", "Temperature", "Wind", "Humidity", "Pressure", "Clouds", "Radiation"],
         provider=Provider(name="RODEO", url="https://rodeo-project.eu/"),
         contact=Contact(email="rodeoproject@fmi.fi"),
         links=[
@@ -86,28 +115,28 @@ async def get_conformance(request: Request) -> ConformanceModel:
 @app.get(
     "/collections",
     tags=["Capabilities"],
+    name="List the available collections from the service",
     response_model=Collections,
     response_model_exclude_none=True,
 )
-async def get_collections(request: Request) -> Collections:
-    base_url = create_url_from_request(request)
+async def get_collections_endpoint(request: Request) -> Collections:
+    base_url = str(request.base_url)
     return Collections(
         links=[
-            Link(href=base_url, rel="self"),
+            Link(href=base_url + "collections", rel="self"),
         ],
         collections=[collection.get_collection_metadata(base_url, is_self=False)],
     )
 
 
 @app.get(
-    "/collections/observations",
+    "/collections/daily-in-situ-meteorological-observations-validated",
     tags=["Collection metadata"],
     response_model=Collection,
     response_model_exclude_none=True,
 )
 async def get_collection_metadata(request: Request) -> Collection:
-    base_url = create_url_from_request(request)
-    return collection.get_collection_metadata(base_url, is_self=True)
+    return collection.get_collection_metadata(str(request.base_url), is_self=True)
 
 
 # Include other routes
