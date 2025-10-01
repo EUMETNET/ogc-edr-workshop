@@ -25,7 +25,6 @@ from data.data import get_data
 from data.data import get_station
 from data.data import get_variables_for_station
 
-
 router = APIRouter(prefix="/collections/daily-in-situ-meteorological-observations-validated")
 
 logger = logging.getLogger(__name__)
@@ -73,15 +72,16 @@ async def get_locations(
 def get_coverage_for_station(station, parameters) -> Coverage:
     # See if we have any data in this time interval by testing the first parameter
     # TODO: Making assumption here the time interval is the same for all parameters
-    data = get_data(station.wsi, list(parameters)[0])
+    data = get_data(station.location_id, list(parameters)[0])
     t_axis_values = [t for t, v in data]
     # Get parameter data
     ranges = {}
     for p in parameters:
         values = []
-        for time, value in get_data(station.wsi, p):
+        for time, value in get_data(station.location_id, p):
             values.append(value)
 
+        # TODO: Consider to add the other datatypes, e.g. by setting them correctly in the .nc file.
         ranges[p] = NdArrayFloat(
             axisNames=["t", "y", "x"],
             shape=[len(values), 1, 1],
@@ -89,7 +89,7 @@ def get_coverage_for_station(station, parameters) -> Coverage:
         )
 
     # Add station code
-    station_code = {"eumetnet:locationId": station.wsi}
+    station_code = {"eumetnet:locationId": station.location_id}
 
     domain = Domain(
         domainType=DomainType.point_series,
@@ -130,7 +130,12 @@ async def get_data_location_id(
     }
 
     coverage = get_coverage_for_station(station, parameters)
-    return CoverageCollection(coverages=[coverage], parameters=parameters, referencing=get_reference_system())
+    return CoverageCollection(
+        domainType=DomainType.point_series,
+        coverages=[coverage],
+        parameters=parameters,
+        referencing=get_reference_system(),
+    )
 
 
 @router.get(
