@@ -66,7 +66,7 @@ async def landing_page(request: Request) -> LandingPageModel:
     return LandingPageModel(
         title="EDR tutorial",
         description="A simple example EDR implementation",
-        keywords=["weather", "temperature", "wind", "humidity", "pressure", "clouds", "radiation"],
+        keywords=["Weather", "Temperature", "Wind", "Humidity", "Pressure", "Clouds", "Radiation"],
         provider=Provider(name="RODEO", url="https://rodeo-project.eu/"),
         contact=Contact(email="rodeoproject@fmi.fi"),
         links=[
