@@ -80,13 +80,13 @@ def get_covjson_parameter_from_variable(var: Variable) -> CovJson_Parameter:
 
 def get_edr_parameter_from_variable(var: Variable) -> Edr_Parameter:
     parameter = Edr_Parameter(
-        id=var.id,
         label=var.long_name,
         observedProperty=Edr_ObservedProperty(
             id=f"https://vocab.nerc.ac.uk/standard_name/{var.standard_name}",
             label=var.standard_name,
         ),
         unit=Edr_Unit(label=var.units),
+        dataType=var.data_type,
     )
     return parameter
 

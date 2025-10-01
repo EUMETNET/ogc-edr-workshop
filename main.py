@@ -21,7 +21,6 @@ from starlette.responses import JSONResponse
 
 from api import collection
 from api import observations
-from api.util import create_url_from_request
 
 
 def setup_logging():
@@ -120,11 +119,11 @@ async def get_conformance(request: Request) -> ConformanceModel:
     response_model=Collections,
     response_model_exclude_none=True,
 )
-async def get_collections(request: Request) -> Collections:
-    base_url = create_url_from_request(request)
+async def get_collections_endpoint(request: Request) -> Collections:
+    base_url = str(request.base_url)
     return Collections(
         links=[
-            Link(href=base_url, rel="self"),
+            Link(href=base_url + "collections", rel="self"),
         ],
         collections=[collection.get_collection_metadata(base_url, is_self=False)],
     )
@@ -137,8 +136,7 @@ async def get_collections(request: Request) -> Collections:
     response_model_exclude_none=True,
 )
 async def get_collection_metadata(request: Request) -> Collection:
-    base_url = create_url_from_request(request)
-    return collection.get_collection_metadata(base_url, is_self=True)
+    return collection.get_collection_metadata(str(request.base_url), is_self=True)
 
 
 # Include other routes
