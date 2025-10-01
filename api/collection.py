@@ -52,13 +52,11 @@ def get_collection_metadata(base_url: str, is_self) -> Collection:
         parameters[var.id] = get_edr_parameter_from_variable(var)
 
     collection = Collection(
-        id="daily-in-situ-meteorological-observations-validated",
+        id="daily",
         title="EDR collection example",
         description="A simple example of an EDR collection.",
         links=[
-            Link(
-                href=base_url + "daily-in-situ-meteorological-observations-validated", rel="self" if is_self else "data"
-            ),
+            Link(href=base_url + "daily", rel="self" if is_self else "data"),
         ],
         extent=Extent(
             spatial=Spatial(
@@ -74,14 +72,14 @@ def get_collection_metadata(base_url: str, is_self) -> Collection:
         data_queries=DataQueries(
             locations=EDRQuery(
                 link=EDRQueryLink(
-                    href=base_url + "daily-in-situ-meteorological-observations-validated/locations",
+                    href=base_url + "daily/locations",
                     rel="data",
                     variables=Variables(query_type="locations", output_formats=["CoverageJSON"]),
                 )
             ),
             area=EDRQuery(
                 link=EDRQueryLink(
-                    href=base_url + "daily-in-situ-meteorological-observations-validated/area",
+                    href=base_url + "daily/area",
                     rel="data",
                     variables=Variables(query_type="area", output_formats=["CoverageJSON"]),
                 )
