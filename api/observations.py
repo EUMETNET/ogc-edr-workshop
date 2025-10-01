@@ -13,7 +13,7 @@ from geojson_pydantic import FeatureCollection
 from starlette.responses import JSONResponse
 
 
-router = APIRouter(prefix="/collections/daily-in-situ-meteorological-observations-validated")
+router = APIRouter(prefix="/collections/daily")
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -60,8 +60,7 @@ async def get_locations(
 @router.get(
     "/locations/{location_id}",
     tags=["Collection data queries"],
-    name="Query endpoint for Location queries of collection "
-    "daily-in-situ-meteorological-observations-validated defined by a location id.",
+    name="Query endpoint for Location queries of collection " "daily defined by a location id.",
     description="Return data for the location defined by location_id",
     response_model=CoverageCollection,
     response_model_exclude_none=True,
@@ -81,8 +80,7 @@ async def get_data_location_id(
 @router.get(
     "/area",
     tags=["Collection data queries"],
-    name="Query endpoint for area queries of collection "
-    "daily-in-situ-meteorological-observations-validated defined by a polygon.",
+    name="Query endpoint for area queries of collection " "daily defined by a polygon.",
     description="Return data for the area defined by the polygon",
     response_model=CoverageCollection,
     response_model_exclude_none=True,
