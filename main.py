@@ -13,7 +13,11 @@ from edr_pydantic.collections import Collection
 from edr_pydantic.collections import Collections
 from edr_pydantic.link import Link
 from fastapi import FastAPI
-from fastapi import Request
+from fastapi import status
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from api import collection
 from api import observations
@@ -44,6 +48,16 @@ app = FastAPI(
     version="v1",
 )
 app.add_middleware(BrotliMiddleware)
+
+
+# According to OGC EDR spec, we can not return 422 (Fast API default for request validation errors),
+# so we return these as 400, making sure we keep the standard FastAPI format.
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(_: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content=jsonable_encoder({"detail": exc.errors()}),
+    )
 
 
 @app.get("/health", include_in_schema=False)

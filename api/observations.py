@@ -86,7 +86,7 @@ def get_coverage_for_station(station, parameters, start_datetime, end_datetime) 
     data = get_data(station.location_id, list(parameters)[0])
     t_axis_values = [t for t, v in data if (start_datetime <= t <= end_datetime)]
     if len(t_axis_values) == 0:
-        raise HTTPException(status_code=400, detail="No data available")
+        raise HTTPException(status_code=404, detail="No data available")
 
     # Get parameter data
     ranges = {}
@@ -146,7 +146,7 @@ async def get_data_location_id(
     # Location query parameter
     station = get_station(location_id)
     if not station:
-        raise HTTPException(status_code=404, detail="Location not found")
+        raise HTTPException(status_code=400, detail=f"The station {location_id} does not exist.")
 
     start_datetime, end_datetime = handle_datetime(datetime)
 
