@@ -123,7 +123,7 @@ async def get_collections_endpoint(request: Request) -> Collections:
 
 
 @app.get(
-    "/collections/daily-in-situ-meteorological-observations-validated",
+    "/collections/daily",
     tags=["Collection metadata"],
     response_model=Collection,
     response_model_exclude_none=True,
