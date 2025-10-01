@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from datetime import datetime
+from datetime import timedelta
 from datetime import timezone
 from functools import cache
 
@@ -12,15 +13,16 @@ import xarray as xr
 
 # Load the data
 dirname = os.path.dirname(__file__)
-filename = os.path.join(dirname, "20240222.nc")
-ds = xr.open_dataset(filename, engine="netcdf4", chunks=None)
-wsi_station_id_mapping = dict(zip(ds["wsi"].values[0].tolist(), ds["station"].values.tolist()))
+
+file_name = "daily-observations-validated-2024.nc"
+file_path = os.path.join(dirname, file_name)
+ds = xr.open_dataset(file_path, engine="netcdf4", chunks=None)
 
 
 @dataclass
 class Station:
     name: str
-    wsi: str
+    location_id: str
     latitude: float
     longitude: float
     height: float
@@ -33,6 +35,7 @@ class Variable:
     standard_name: str | None
     units: str
     comment: str | None
+    data_type: str
 
 
 @cache
@@ -50,8 +53,8 @@ def get_stations():
     return stations
 
 
-def get_station(station_wsi: str) -> Station | None:
-    stations = list(filter(lambda x: x.wsi == station_wsi, get_stations()))
+def get_station(station_location_id: str) -> Station | None:
+    stations = list(filter(lambda x: x.location_id == station_location_id, get_stations()))
     return stations[0] if len(stations) == 1 else None
 
 
@@ -76,12 +79,24 @@ def get_variables():
         if "standard_name" not in data_var.attrs:
             # Don't handle these for now
             continue
+
+        d_type = data_var.dtype.name
+        if d_type.startswith("float"):
+            d_type = "float"
+        elif d_type.startswith("int") | d_type.startswith("uint"):
+            d_type = "integer"
+        elif d_type.startswith("U"):
+            d_type = "string"
+        else:
+            raise Exception(f"Variable date type {d_type} not recognized for {data_var.name}.")
+
         variable = Variable(
-            id=data_var.name,
+            id=str(data_var.name),
             long_name=data_var.long_name,
             standard_name=data_var.standard_name,
             units=data_var.units,
             comment=data_var.comment if "comment" in data_var.attrs else None,
+            data_type=d_type,
         )
         variables.append(variable)
     return variables
@@ -92,8 +107,8 @@ def get_variable(var_id: str) -> Variable | None:
     return vars[0] if len(vars) == 1 else None
 
 
-def get_data(station_wsi: str, variable: str) -> list[tuple[datetime, float | None]]:
-    var = ds.sel(station=wsi_station_id_mapping[station_wsi])[variable].fillna(None)
+def get_data(station_location_id: str, variable: str) -> list[tuple[datetime, float | None]]:
+    var = ds.sel(station=station_location_id)[variable].fillna(None)
     data = []
     for time, obs_value in zip(
         pd.to_datetime(var["time"].data).to_pydatetime(),
@@ -108,7 +123,7 @@ def get_variables_for_station(station_id: str):
     vars = get_variables()
     vars_with_data = []
     for var in vars:
-        var_data = ds.sel(station=wsi_station_id_mapping[station_id])[var.id]
+        var_data = ds.sel(station=station_id)[var.id]
         if not np.isnan(var_data.values).all():
             vars_with_data.append(var)
     return vars_with_data
@@ -120,14 +135,22 @@ def get_temporal_extent():
     return min(times).replace(tzinfo=timezone.utc), max(times).replace(tzinfo=timezone.utc)
 
 
+@cache
+def get_temporal_interval() -> tuple[str, timedelta]:
+    if file_name == "daily-observations-validated-2024.nc":
+        return "P1D", timedelta(days=1)
+    else:
+        raise Exception(f"No duration found for file: {file_path}")
+
+
 if __name__ == "__main__":
     print(get_stations())
     print(get_variables())
 
     print(get_station("0-20000-0-06260"))
     print(get_station("0-20000-0-06209"))
-    print(get_variable("ff"))
-    print(get_data("0-20000-0-06260", "ff"))
+    print(get_variable("FG"))
+    print(get_data("0-20000-0-06260", "FG"))
 
     print(get_temporal_extent())
 

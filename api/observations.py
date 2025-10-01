@@ -13,7 +13,7 @@ from geojson_pydantic import FeatureCollection
 from starlette.responses import JSONResponse
 
 
-router = APIRouter(prefix="/collections/observations")
+router = APIRouter(prefix="/collections/daily-in-situ-meteorological-observations-validated")
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -34,20 +34,23 @@ class EDRFeatureCollection(EdrBaseModel, FeatureCollection):
 @router.get(
     "/locations",
     tags=["Collection data queries"],
+    name="List of locations",
+    description="List the locations available for the collection",
     response_model=EDRFeatureCollection,
     response_model_exclude_none=True,
     response_class=GeoJsonResponse,
 )
 async def get_locations(
     bbox: Annotated[str | None, Query(example="5.0,52.0,6.0,52.1")] = None,
-    # datetime: Annotated[str | None, Query(example="2024-02-22T01:00:00Z/2024-02-22T02:00:00Z")] = None,
+    # TODO: now that we have a larger time span consider to implement datetime.
+    # datetime: Annotated[str | None, Query(example="2024-02-22T00:00:00Z/2024-02-27T00:00:00Z")] = None,
     parameter_name: Annotated[
         str | None,
         Query(
             alias="parameter-name",
-            description="Comma seperated list of parameter names. "
+            description="Comma separated list of parameter names. "
             "Return only locations that have one of these parameter.",
-            example="ff, dd",
+            example="FG, DDVEC",
         ),
     ] = None,
 ) -> EDRFeatureCollection:
@@ -57,6 +60,9 @@ async def get_locations(
 @router.get(
     "/locations/{location_id}",
     tags=["Collection data queries"],
+    name="Query endpoint for Location queries of collection "
+    "daily-in-situ-meteorological-observations-validated defined by a location id.",
+    description="Return data for the location defined by location_id",
     response_model=CoverageCollection,
     response_model_exclude_none=True,
     response_class=CoverageJsonResponse,
@@ -65,9 +71,9 @@ async def get_data_location_id(
     location_id: Annotated[str, Path(example="0-20000-0-06260")],
     parameter_name: Annotated[
         str | None,
-        Query(alias="parameter-name", description="Comma seperated list of parameter names.", example="ff, dd"),
+        Query(alias="parameter-name", description="Comma separated list of parameter names.", example="FG, DDVEC"),
     ] = None,
-    datetime: Annotated[str | None, Query(example="2024-02-22T01:00:00Z/2024-02-22T02:00:00Z")] = None,
+    datetime: Annotated[str | None, Query(example="2024-02-22T00:00:00Z/2024-02-27T00:00:00Z")] = None,
 ) -> CoverageCollection:
     pass
 
@@ -75,6 +81,9 @@ async def get_data_location_id(
 @router.get(
     "/area",
     tags=["Collection data queries"],
+    name="Query endpoint for area queries of collection "
+    "daily-in-situ-meteorological-observations-validated defined by a polygon.",
+    description="Return data for the area defined by the polygon",
     response_model=CoverageCollection,
     response_model_exclude_none=True,
     response_class=CoverageJsonResponse,
@@ -83,8 +92,8 @@ async def get_data_area(
     coords: Annotated[str, Query(example="POLYGON((5.0 52.0, 6.0 52.0,6.0 52.1,5.0 52.1, 5.0 52.0))")],
     parameter_name: Annotated[
         str | None,
-        Query(alias="parameter-name", description="Comma seperated list of parameter names.", example="ff, dd"),
+        Query(alias="parameter-name", description="Comma separated list of parameter names.", example="FG, DDVEC"),
     ] = None,
-    datetime: Annotated[str | None, Query(example="2024-02-22T01:00:00Z/2024-02-22T02:00:00Z")] = None,
+    datetime: Annotated[str | None, Query(example="2024-02-22T00:00:00Z/2024-02-27T00:00:00Z")] = None,
 ) -> CoverageCollection:
     pass
