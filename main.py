@@ -28,16 +28,30 @@ setup_logging()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-
 app = FastAPI(
-    title="RODEO WP5 EDR workshop", swagger_ui_parameters={"defaultModelsExpandDepth": -1, "tryItOutEnabled": True}
+    title="EDR workshop",
+    contact={
+        "email": "rodeoproject@fmi.fi",
+        "name": "RODEO",
+    },
+    description="Climate EDR API",
+    swagger_ui_parameters={"defaultModelsExpandDepth": -1, "tryItOutEnabled": True},
+    version="v1",
 )
 app.add_middleware(BrotliMiddleware)
+
+
+@app.get("/health", include_in_schema=False)
+async def health_endpoint():
+    return "ok"
 
 
 @app.get(
     "/",
     tags=["Capabilities"],
+    name="landing page of this API",
+    description="The landing page provides links to the API definition,"
+    + " the Conformance statements and the metadata about the feature data in this dataset.",
     response_model=LandingPageModel,
     response_model_exclude_none=True,
 )
@@ -68,15 +82,16 @@ async def get_conformance(request: Request) -> ConformanceModel:
 @app.get(
     "/collections",
     tags=["Capabilities"],
+    name="List the available collections from the service",
     response_model=Collections,
     response_model_exclude_none=True,
 )
-async def get_collections(request: Request) -> Collections:
+async def get_collections_endpoint(request: Request) -> Collections:
     pass
 
 
 @app.get(
-    "/collections/observations",
+    "/collections/daily",
     tags=["Collection metadata"],
     response_model=Collection,
     response_model_exclude_none=True,
@@ -89,4 +104,4 @@ async def get_collection_metadata(request: Request) -> Collection:
 app.include_router(observations.router)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
