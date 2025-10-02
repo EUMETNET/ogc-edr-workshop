@@ -14,10 +14,6 @@ from pydantic import TypeAdapter
 from data.data import Variable
 
 
-def create_url_from_request(request) -> str:
-    return str(request.base_url) + "collections"
-
-
 def split_string_parameters_to_list(value: str) -> list[str]:
     return list(map(str.strip, value.split(",")))
 
@@ -69,7 +65,6 @@ def datetime_to_iso_string(value: datetime) -> str:
 
 def get_covjson_parameter_from_variable(var: Variable) -> CovJson_Parameter:
     parameter = CovJson_Parameter(
-        id=var.id,
         label={"en": var.long_name},
         observedProperty=CovJson_ObservedProperty(
             id=f"https://vocab.nerc.ac.uk/standard_name/{var.standard_name}",
