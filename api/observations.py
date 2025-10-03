@@ -87,12 +87,14 @@ async def get_locations(
     stations = data.get_stations()
 
     # Handle bounding box
-    if bbox:
-        bbox_values = list(map(lambda x: float(str.strip(x)), bbox.split(",")))
-        if len(bbox_values) != 4:
-            raise HTTPException(status_code=400, detail="If provided, the bbox should have 4 values")
-        left, bottom, right, top = bbox_values
-        stations = list(filter(lambda s: left <= s.longitude <= right and bottom <= s.latitude <= top, stations))
+    if not bbox:
+        bbox = "-180, -90, 180, 90"
+
+    bbox_values = list(map(lambda x: float(str.strip(x)), bbox.split(",")))
+    if len(bbox_values) != 4:
+        raise HTTPException(status_code=400, detail="If provided, the bbox should have 4 values")
+    left, bottom, right, top = bbox_values
+    stations = list(filter(lambda s: left <= s.longitude <= right and bottom <= s.latitude <= top, stations))
 
     # Handle parameters
     all_parameters: dict[str, Parameter] = {var.id: get_covjson_parameter_from_variable(var) for var in get_variables()}

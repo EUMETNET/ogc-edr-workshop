@@ -67,7 +67,7 @@ async def health_endpoint():
 @app.get(
     "/",
     tags=["Capabilities"],
-    name="landing page of this API",
+    name="Landing page of this API",
     description="The landing page provides links to the API definition,"
     + " the Conformance statements and the metadata about the feature data in this dataset.",
     response_model=LandingPageModel,
