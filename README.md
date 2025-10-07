@@ -1,8 +1,7 @@
 # OGC EDR Workshop
 
 This workshop was given twice as part of the EUMETNET project RODEO, in the context of Work Package 5 (Climate data). The
-workshop was first given on 2024-06-13 and 2024-06-14 in Helsinki, Finland. The second time took place in Vienna, on
-2025-04-08 and 2025-04-09.
+workshop was first given on 2024-06-13 and 2024-06-14 in Helsinki, Finland. The second time took place in Vienna, on 2025-04-08 and 2025-04-09. The third in Zagreb, on 2025-10-07 and 2025-10-08.
 
 See the [slides](OGC-EDR-workshop.pdf) of the workshop if you would like to follow along.
 
